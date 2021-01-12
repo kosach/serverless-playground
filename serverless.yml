@@ -4,6 +4,7 @@ service:
 plugins:
   - serverless-bundle
   - serverless-pseudo-parameters
+  - serverless-offline
 
 provider:
   name: aws
@@ -19,6 +20,8 @@ resources:
   Resources:
     AuctionsTable: ${file(resources/AuctionsTable.yml):AuctionsTable}
 functions:
+  authorizer:
+    handler: src/middleware/auth.handler
   createAuction:
     handler: src/handlers/createAuction.handler
     events:
@@ -31,19 +34,31 @@ functions:
       - http:
           method: GET
           path: /auctions
+  test:
+    handler: src/handlers/test.handler
+    events:
+      - http:
+          method: GET
+          path: /test
+          authorizer: 
+            name: authorizer
+            type: request
   getAuction:
     handler: src/handlers/getAuction.handler
     events:
       - http:
           method: GET
           path: /auctions/{id}
-  # createAuction:
-  #   handler: src/handlers/createAuction.handler
-  #   events:
-  #     - http:
-  #         method: POST
-  #         path: /auction
+  placeBid:
+    handler: src/handlers/placeBid.handler
+    events:
+      - http:
+          method: PATCH
+          path: /auction/{id}/bid
 custom:
+  middleware:
+    pre:
+      - auth.authenticate
   AuctionsTable:
     name: !Ref AuctionsTable
     arn:  !GetAtt AuctionsTable.Arn
